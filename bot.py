@@ -68,11 +68,15 @@ def build_meter() -> str:
     now = datetime.now(timezone.utc)
     last_seen = get_last_seen()
 
-    # Days elapsed since letter was sent (this drives the meter)
-    days_elapsed = (now - LETTER_DATE).days
-    days_silent = (now - last_seen).days if last_seen else days_elapsed
+    # Meter runs from his last seen date to the deadline
+    anchor = last_seen if last_seen else LETTER_DATE
+    if anchor.tzinfo is None:
+        anchor = anchor.replace(tzinfo=timezone.utc)
+    total_window = max((DEADLINE - anchor).days, 1)
+    days_silent = (now - anchor).days
     days_left = max((DEADLINE - now).days, 0)
-    percent = min(round((days_elapsed / TOTAL_DAYS) * 100), 100)
+    days_elapsed = (now - LETTER_DATE).days
+    percent = min(round((days_silent / total_window) * 100), 100)
 
     # Rainbow bar - 24 blocks, colours shift left to right
     total_blocks = 24
